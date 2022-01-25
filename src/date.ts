@@ -18,12 +18,8 @@ export class _Date {
    * @param years
    * @param refDate
    */
-  past(years?: number, refDate?: string): Date {
-    let date = new Date();
-    if (typeof refDate !== 'undefined') {
-      date = new Date(Date.parse(refDate));
-    }
-
+  past(years?: number, refDate?: string | Date): Date {
+    const date = this.toDate(refDate);
     const range = {
       min: 1000,
       max: (years || 1) * 365 * 24 * 3600 * 1000,
@@ -43,12 +39,8 @@ export class _Date {
    * @param years
    * @param refDate
    */
-  future(years?: number, refDate?: string): Date {
-    let date = new Date();
-    if (typeof refDate !== 'undefined') {
-      date = new Date(Date.parse(refDate));
-    }
-
+  future(years?: number, refDate?: string | Date): Date {
+    const date = this.toDate(refDate);
     const range = {
       min: 1000,
       max: (years || 1) * 365 * 24 * 3600 * 1000,
@@ -68,13 +60,14 @@ export class _Date {
    * @param from
    * @param to
    */
-  between(from: string, to: string): Date {
-    const fromMilli = Date.parse(from);
-    const dateOffset = this.faker.datatype.number(Date.parse(to) - fromMilli);
+  between(from: string | Date, to: string | Date): Date {
+    const fromMilliseconds = this.toMilliseconds(from);
+    const toMilliseconds = this.toMilliseconds(to);
+    const dateOffset = this.faker.datatype.number(
+      toMilliseconds - fromMilliseconds
+    );
 
-    const newDate = new Date(fromMilli + dateOffset);
-
-    return newDate;
+    return new Date(fromMilliseconds + dateOffset);
   }
 
   /**
@@ -85,21 +78,23 @@ export class _Date {
    * @param to
    * @param num
    */
-  betweens(from: string, to: string, num?: number): Date[] {
+  betweens(from: string | Date, to: string | Date, num?: number): Date[] {
     if (typeof num == 'undefined') {
       num = 3;
     }
+
     const newDates: Date[] = [];
-    let fromMilli = Date.parse(from);
-    const dateOffset = (Date.parse(to) - fromMilli) / (num + 1);
-    let lastDate: string | Date = from;
+    const toMilliseconds = this.toMilliseconds(to);
+    let fromMilliseconds = this.toMilliseconds(from);
+    const dateOffset = (toMilliseconds - fromMilliseconds) / (num + 1);
+    let lastDate = this.toDate(from);
+
     for (let i = 0; i < num; i++) {
-      // TODO @Shinigami92 2022-01-11: It may be a bug that `lastDate` is passed to parse if it's a `Date` not a `string`
-      // @ts-expect-error
-      fromMilli = Date.parse(lastDate);
-      lastDate = new Date(fromMilli + dateOffset);
+      fromMilliseconds = lastDate.getTime();
+      lastDate = new Date(fromMilliseconds + dateOffset);
       newDates.push(lastDate);
     }
+
     return newDates;
   }
 
@@ -110,12 +105,8 @@ export class _Date {
    * @param days
    * @param refDate
    */
-  recent(days?: number, refDate?: string): Date {
-    let date = new Date();
-    if (typeof refDate !== 'undefined') {
-      date = new Date(Date.parse(refDate));
-    }
-
+  recent(days?: number, refDate?: string | Date): Date {
+    const date = this.toDate(refDate);
     const range = {
       min: 1000,
       max: (days || 1) * 24 * 3600 * 1000,
@@ -135,12 +126,8 @@ export class _Date {
    * @param days
    * @param refDate
    */
-  soon(days?: number, refDate?: string): Date {
-    let date = new Date();
-    if (typeof refDate !== 'undefined') {
-      date = new Date(Date.parse(refDate));
-    }
-
+  soon(days?: number, refDate?: string | Date): Date {
+    const date = this.toDate(refDate);
     const range = {
       min: 1000,
       max: (days || 1) * 24 * 3600 * 1000,
@@ -203,5 +190,21 @@ export class _Date {
     const source = this.faker.definitions.date.weekday[type];
 
     return this.faker.random.arrayElement(source);
+  }
+
+  private toDate(date?: string | Date): Date {
+    if (date != null) {
+      return new Date(date instanceof Date ? date : Date.parse(date));
+    }
+
+    return new Date();
+  }
+
+  private toMilliseconds(date?: string | Date): number {
+    if (date != null) {
+      return date instanceof Date ? date.getTime() : Date.parse(date);
+    }
+
+    return new Date().getTime();
   }
 }
